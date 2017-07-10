@@ -15,7 +15,7 @@ import json
 from Index import Index
 from docopt import docopt
 
-PROJECT_DIR = '/Users/nick/VirtualEnvProjects/mut-index/'
+PROJECT_DIR = './'
 
 ## Server Manual
 # mut-index --url http://docs.mongodb.com/ manual-master /Users/nick/VirtualEnvProjects/mut-index/html_files
