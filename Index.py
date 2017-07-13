@@ -20,7 +20,9 @@ class Index:
             '404.html',
             '410.html',
             'genindex.html',
-            'faq.html'
+            'faq.html',
+            'search.html',
+            'contents.html'
         ]
         self.num_documents_total = 0
         self.num_documents_processed = 0
@@ -29,16 +31,22 @@ class Index:
     def build(self):
         '''Build the index from scratch.'''
         html_files = self._get_html_files()
-        for html_file in html_files:
-            document = self._parse_html(html_file)
-            self.manifest['documents'].append(document)
-            self.num_documents_processed += 1
-            self.update_progress_bar(document)
+        self._process_html_files(html_files)
+        self._summarize_build()
+
+    def _summarize_build(self):
         summary = 'Finished indexing!\nIndexed {num_docs} documents from {property_name} in {time} seconds.\n'
         summary = summary.format(num_docs=self.num_documents_processed,
                                  property_name=self.property_name,
                                  time=str(time.time() - self.start_time))
         print(summary)
+
+    def _process_html_files(self, html_files):
+        for html_file in html_files:
+            document = self._parse_html_file(html_file)
+            self.manifest['documents'].append(document)
+            self.num_documents_processed += 1
+            self.update_progress_bar(document)
 
     def _get_html_files(self):
         '''Return a list of absolute paths for html files.'''
@@ -54,7 +62,7 @@ class Index:
         return html_files
 
 
-    def _parse_html(self, html_file):
+    def _parse_html_file(self, html_file):
         '''Open the html file with the given path then parse the file.'''
         with open(html_file, 'r') as doc:
             return Document(self.root_dir, doc).export()
