@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import math
+import concurrent.futures
 from Document import Document
 
 class Index:
@@ -42,11 +43,12 @@ class Index:
         print(summary)
 
     def _process_html_files(self, html_files):
-        for html_file in html_files:
-            document = self._parse_html_file(html_file)
-            self.manifest['documents'].append(document)
-            self.num_documents_processed += 1
-            self.update_progress_bar(document)
+        '''Parse a list of .html file paths in parallel.'''
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            for document in executor.map(self._parse_html_file, html_files):
+                self.manifest['documents'].append(document)
+                self.num_documents_processed += 1
+                self.update_progress_bar(document)
 
     def _get_html_files(self):
         '''Return a list of absolute paths for html files.'''
