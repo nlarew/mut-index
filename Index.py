@@ -7,9 +7,8 @@ from Document import Document
 
 class Index:
     '''Build the index and compile a JSON manifest.'''
-    def __init__(self, base_url, property_name, root_dir, include_in_global_search):
+    def __init__(self, base_url, root_dir, include_in_global_search):
         self.root_dir = root_dir
-        self.property_name = property_name
         self.manifest = {
             'url': base_url,
             'includeInGlobalSearch': include_in_global_search,
@@ -36,9 +35,8 @@ class Index:
         self._summarize_build()
 
     def _summarize_build(self):
-        summary = 'Finished indexing!\nIndexed {num_docs} documents from {property_name} in {time} seconds.\n'
+        summary = 'Finished indexing!\nIndexed {num_docs} documents in {time} seconds.\n'
         summary = summary.format(num_docs=self.num_documents_processed,
-                                 property_name=self.property_name,
                                  time=str(time.time() - self.start_time))
         print(summary)
 
