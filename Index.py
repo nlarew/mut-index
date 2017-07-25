@@ -6,7 +6,7 @@ import concurrent.futures
 from Document import Document
 
 class Index:
-    '''Build the index and compile a JSON manifest.'''
+    '''Build the index and compile a manifest.'''
     def __init__(self, base_url, root_dir, include_in_global_search):
         self.root_dir = root_dir
         self.manifest = {
