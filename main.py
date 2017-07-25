@@ -31,12 +31,11 @@ def main():
     # Build the Index
     index = Index(base_url, root_dir, include_in_global_search)
     index.build()
-    print('index\n', index)
     # Export the manifest
     manifest = json.dumps(index.manifest, indent=4)
     upload_manifest_to_s3('docs-mongodb-org-prod', output_file, manifest)
     # Refresh Marian
-    requests.post('http://01cfe8a4.ngrok.io/refresh', data={})
+    requests.post('https://marian.mongodb.com/refresh', data={})
 
 if __name__ == "__main__":
     main()
