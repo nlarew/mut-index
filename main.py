@@ -15,7 +15,6 @@ Usage:
 import os
 import time
 from docopt import docopt
-from termcolor import colored
 # internal imports
 from Index         import Index
 from s3upload      import upload_manifest_to_s3
