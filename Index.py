@@ -2,7 +2,9 @@ import os
 import sys
 import time
 import math
+import json
 import concurrent.futures
+from termcolor import colored
 from Document import Document
 
 class Index:
@@ -28,17 +30,23 @@ class Index:
         self.num_documents_processed = 0
         self.start_time = time.time()
 
-    def build(self):
+    def build(self, filetype=None):
         '''Build the index from scratch.'''
         html_files = self._get_html_files()
         self._process_html_files(html_files)
         self._summarize_build()
 
+        if filetype and filetype == 'json':
+            return json.dumps(self.manifest, indent=4)
+        else:
+            print('!! Manifest returned as python dict object.')
+            return self.manifest
+
     def _summarize_build(self):
-        summary = 'Finished indexing!\nIndexed {num_docs} documents in {time} seconds.\n'
+        summary = '\nFinished indexing!\nIndexed {num_docs} documents in {time} seconds.'
         summary = summary.format(num_docs=self.num_documents_processed,
                                  time=str(time.time() - self.start_time))
-        print(summary)
+        print(colored(summary, 'green'))
 
     def _process_html_files(self, html_files):
         '''Parse a list of .html file paths in parallel.'''
@@ -69,40 +77,42 @@ class Index:
 
     def update_progress_bar(self, doc):
         '''Update the stdout progress bar.'''
+        # Elapsed Time
         total_elapsed_time = '{elapsed_time: .3f} (s)'
         elapsed_time=round(time.time() - self.start_time, 3)
-        total_elapsed_time = total_elapsed_time.format(elapsed_time=elapsed_time).ljust(13, ' ')
+        total_elapsed_time = total_elapsed_time.format(
+            elapsed_time=elapsed_time
+        ).ljust(13, ' ')
 
+        # Progress Bar
+        progress_bar = '{percent_done}|{done}{todo}|'
+        percent_done = self.num_documents_processed / self.num_documents_total
+        done = u'\u2588' * math.floor(30*percent_done)
+        todo = ' ' * (30 - math.floor(30*percent_done))
+        progress_bar = progress_bar.format(
+            percent_done=(str(int(100 * percent_done)) + '%').rjust(4, ' '),
+            done=colored(done, 'blue' if percent_done != 1 else 'green'),
+            todo=todo
+        )
+
+        # Progress Count
         progress_count = '[{num_docs_processed} / {num_docs_total}]'
         total_digits = len(str(self.num_documents_total))
         num_docs_processed = self.num_documents_processed.__str__().ljust(total_digits)
-        progress_count = progress_count.format(num_docs_processed=num_docs_processed,
-                                               num_docs_total=self.num_documents_total)
-
-        progress_bar = '{percent_done}|{progress_bar_color}{done}{todo}{default_color}|'
-        done=math.floor(30*self.num_documents_processed / self.num_documents_total)*u'\u2588'
-        todo=(30 - math.floor(30*self.num_documents_processed / self.num_documents_total))*' '
-        percent_done = (str(int(100 * self.num_documents_processed / self.num_documents_total)) + '%').rjust(4, ' ')
-        progress_bar_color = '\033[94m' if self.num_documents_processed != self.num_documents_total else '\033[92m'
-        default_color = '\033[0m'
-        progress_bar = progress_bar.format(done=done,
-                                           todo=todo,
-                                           percent_done=percent_done,
-                                           progress_bar_color=progress_bar_color,
-                                           default_color=default_color)
-        current_doc_slug = doc['slug']
-
-        logstring = total_elapsed_time + '   ' + progress_bar + '    '+ progress_count + '    ' + current_doc_slug
-        if self.num_documents_processed == self.num_documents_total:
-            logstring += "\n"
+        progress_count = progress_count.format(
+            num_docs_processed=num_docs_processed,
+            num_docs_total=self.num_documents_total
+        )
 
         if self.num_documents_processed == 1:
-            print("\nProcessing Documents...")
             print(
                 'Elapsed Time:'.ljust(14, ' '),
                 'Progress:'.ljust(39, ' '),
                 'HTML Files:'.ljust(8+2*total_digits, ' '),
                 'Current File:'
             )
+        current_doc_slug = doc['slug']
+        logstring = total_elapsed_time + '   ' + progress_bar + '    '+ progress_count + '    ' + current_doc_slug
+        logstring += '\n' if percent_done == 1 else ''
         sys.stdout.write("\033[K") #Delete contents of stdout line.
         print(logstring, end="\r") #Print to stdout without newline then carriage return.3
