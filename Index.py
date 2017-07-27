@@ -1,10 +1,8 @@
-import os
-import sys
-import time
-import math
-import json
+import os, sys, time, math, json
 import concurrent.futures
 from termcolor import colored
+
+import ProgressBar
 from Document import Document
 
 class Index:
@@ -26,35 +24,20 @@ class Index:
             'search.html',
             'contents.html'
         ]
-        self.num_documents_total = 0
         self.num_documents_processed = 0
         self.start_time = time.time()
+        self.html_files = self._get_html_files()
+        self.progress_bar = ProgressBar.ProgressBar(start_time=self.start_time, num_documents=len(self.html_files))
 
     def build(self, filetype=None):
         '''Build the index from scratch.'''
-        html_files = self._get_html_files()
-        self._process_html_files(html_files)
+        self._process_html_files(self.html_files)
         self._summarize_build()
-
         if filetype and filetype == 'json':
             return json.dumps(self.manifest, indent=4)
         else:
             print('!! Manifest returned as python dict object.')
             return self.manifest
-
-    def _summarize_build(self):
-        summary = '\nFinished indexing!\nIndexed {num_docs} documents in {time} seconds.'
-        summary = summary.format(num_docs=self.num_documents_processed,
-                                 time=str(time.time() - self.start_time))
-        print(colored(summary, 'green'))
-
-    def _process_html_files(self, html_files):
-        '''Parse a list of .html file paths in parallel.'''
-        with concurrent.futures.ProcessPoolExecutor() as executor:
-            for document in executor.map(self._parse_html_file, html_files):
-                self.manifest['documents'].append(document)
-                self.num_documents_processed += 1
-                self.update_progress_bar(document)
 
     def _get_html_files(self):
         '''Return a list of absolute paths for html files.'''
@@ -62,12 +45,19 @@ class Index:
         def should_index(file):
             '''Return a boolean indicating whether the file should be indexed.'''
             return file.endswith('.html') and file not in self.blacklist
-
         for root, _, files in os.walk(self.root_dir):
             html_files.extend([str(os.path.join(root, file)) for file in files if should_index(file)])
-
         self.num_documents_total = len(html_files)
         return html_files
+
+
+    def _process_html_files(self, html_files):
+        '''Parse a list of .html file paths in parallel.'''
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            for document in executor.map(self._parse_html_file, html_files):
+                self.manifest['documents'].append(document)
+                self.num_documents_processed += 1
+                self.progress_bar.update(document['slug'])
 
 
     def _parse_html_file(self, html_file):
@@ -75,44 +65,8 @@ class Index:
         with open(html_file, 'r') as doc:
             return Document(self.root_dir, doc).export()
 
-    def update_progress_bar(self, doc):
-        '''Update the stdout progress bar.'''
-        # Elapsed Time
-        total_elapsed_time = '{elapsed_time: .3f} (s)'
-        elapsed_time=round(time.time() - self.start_time, 3)
-        total_elapsed_time = total_elapsed_time.format(
-            elapsed_time=elapsed_time
-        ).ljust(13, ' ')
-
-        # Progress Bar
-        progress_bar = '{percent_done}|{done}{todo}|'
-        percent_done = self.num_documents_processed / self.num_documents_total
-        done = u'\u2588' * math.floor(30*percent_done)
-        todo = ' ' * (30 - math.floor(30*percent_done))
-        progress_bar = progress_bar.format(
-            percent_done=(str(int(100 * percent_done)) + '%').rjust(4, ' '),
-            done=colored(done, 'blue' if percent_done != 1 else 'green'),
-            todo=todo
-        )
-
-        # Progress Count
-        progress_count = '[{num_docs_processed} / {num_docs_total}]'
-        total_digits = len(str(self.num_documents_total))
-        num_docs_processed = self.num_documents_processed.__str__().ljust(total_digits)
-        progress_count = progress_count.format(
-            num_docs_processed=num_docs_processed,
-            num_docs_total=self.num_documents_total
-        )
-
-        if self.num_documents_processed == 1:
-            print(
-                'Elapsed Time:'.ljust(14, ' '),
-                'Progress:'.ljust(39, ' '),
-                'HTML Files:'.ljust(8+2*total_digits, ' '),
-                'Current File:'
-            )
-        current_doc_slug = doc['slug']
-        logstring = total_elapsed_time + '   ' + progress_bar + '    '+ progress_count + '    ' + current_doc_slug
-        logstring += '\n' if percent_done == 1 else ''
-        sys.stdout.write("\033[K") #Delete contents of stdout line.
-        print(logstring, end="\r") #Print to stdout without newline then carriage return.3
+    def _summarize_build(self):
+        summary = '\nFinished indexing!\nIndexed {num_docs} documents in {time} seconds.'
+        summary = summary.format(num_docs=self.num_documents_processed,
+                                 time=str(time.time() - self.start_time))
+        print(colored(summary, 'green'))

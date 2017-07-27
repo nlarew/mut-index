@@ -3,7 +3,7 @@ import requests
 from termcolor import colored
 import textwrap
 
-MARIAN_URL = 'http://a3ef3984.ngrok.io/'
+MARIAN_URL = 'http://marian.mongodb.com/'
 
 def refresh_marian():
     print("\n### Refreshing Marian\n")
