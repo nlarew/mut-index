@@ -1,6 +1,8 @@
 import os
+import sys
 import html
 import html5_parser
+import re
 from lxml import etree
 from lxml.cssselect import CSSSelector
 
@@ -59,23 +61,51 @@ class Document:
 
     def get_page_preview(self):
         '''Return a summary of the page.'''
+        def test_page_preview(preview):
+            '''Return False if bad preview.'''
+            is_good_preview = False
+            bad_previews = [
+                re.compile('On this page'),
+                re.compile('\u00a9 MongoDB, Inc. 2008-2017'),
+                re.compile('Run.'),
+                re.compile('Base URL.'),
+                re.compile('The Atlas API uses HTTP Digest Authentication.')
+            ]
+            is_good_preview = not any(map(lambda bp: bp.match(preview), bad_previews))
+            return is_good_preview
+
         def set_to_meta_description():
             '''Set preview to the page's meta description.'''
-            sel = CSSSelector('meta[name="description"]')
-            return node_to_text(sel(self._html_document)[0]) #Throws IndexError if no meta[name="description"] tag.
+            candidate_list = self._html_document.cssselect('meta[name="description"]')
+            if len(candidate_list) > 0: #Check if the selector found ANY meta[name="description"] tags
+                candidate_preview = candidate_list[0]
+                if type(candidate_preview) is etree._Element and candidate_preview.tag == 'meta':
+                    candidate_preview = candidate_preview.get('content')
+                is_good_preview = test_page_preview(candidate_preview)
+                if is_good_preview:
+                    return candidate_preview
+            return False
         def set_to_first_paragraph():
             '''Set preview to the first descriptive paragraph on the page.'''
-            sel = CSSSelector('div[class=body] > div[class=section] > p:first-of-type')
-            nodes = sel(self._html_main_column)
-            if not nodes:
-                return ''
-            return node_to_text(nodes[0])
-
-        try:
-            page_preview = set_to_meta_description()
-        except IndexError:
+            preview = 'No good preview found.'
+            candidate_selectors = [ #Order is very important! The first good preview is selected without further search.
+                '.section > p:first-of-type'
+                # 'div .main-column .section > p:first-of-type'
+            ]
+            for selector in candidate_selectors:
+                candidate_list = self._html_main_column.cssselect(selector)
+                if len(candidate_list) > 0: #Check if the selector found ANY p tags
+                    candidate_preview = candidate_list[0]
+                    if type(candidate_preview) is etree._Element and candidate_preview.tag == 'p':
+                        candidate_preview = node_to_text(candidate_preview)
+                    is_good_preview = test_page_preview(candidate_preview)
+                    if is_good_preview:
+                        preview = candidate_preview
+                        break
+            return preview
+        page_preview = set_to_meta_description()
+        if not page_preview:
             page_preview = set_to_first_paragraph()
-
         page_preview = ' '.join(page_preview.split())
         return page_preview
 

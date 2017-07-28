@@ -7,7 +7,7 @@ from Document import Document
 
 class Index:
     '''Build the index and compile a manifest.'''
-    def __init__(self, base_url, root_dir, include_in_global_search):
+    def __init__(self, base_url, root_dir, include_in_global_search, hide_progress_bar):
         self.root_dir = root_dir
         self.manifest = {
             'url': base_url,
@@ -27,7 +27,8 @@ class Index:
         self.num_documents_processed = 0
         self.start_time = time.time()
         self.html_files = self._get_html_files()
-        self.progress_bar = ProgressBar.ProgressBar(start_time=self.start_time, num_documents=len(self.html_files))
+        if not hide_progress_bar:
+            self.progress_bar = ProgressBar.ProgressBar(start_time=self.start_time, num_documents=len(self.html_files))
 
     def build(self, filetype=None):
         '''Build the index from scratch.'''
@@ -57,7 +58,8 @@ class Index:
             for document in executor.map(self._parse_html_file, html_files):
                 self.manifest['documents'].append(document)
                 self.num_documents_processed += 1
-                self.progress_bar.update(document['slug'])
+                try: self.progress_bar.update(document['slug'])
+                except Exception: pass
 
 
     def _parse_html_file(self, html_file):
