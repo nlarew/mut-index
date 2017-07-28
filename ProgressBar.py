@@ -1,5 +1,7 @@
 import time, math, sys
+from functools import partial
 from termcolor import colored
+
 
 class Section:
     def __init__(self, header='', output='', format='', data={}):
@@ -87,18 +89,17 @@ class ProgressBar():
         self.num_processed += 1
         for section_name in self.sections:
             section = self.sections[section_name]
-            update_call = 'self.sections["' + type(section).__name__ + '"].update('
-            num_args = section.update.__code__.co_argcount - 1 # Subtract one for implicit 'self' argument
-            if num_args > 0:
-                update_args = section.update.__code__.co_varnames # Tuple of all argument names
-                for i, arg in enumerate(update_args):
-                    more_args = i != (num_args - 1) # True if more args. subtract one for zero-index normalization
-                    if arg == 'num_processed':
-                        update_call += 'num_processed=' + str(self.num_processed) + more_args*','
-                    if arg == 'current_file':
-                        update_call += 'current_file="' + processed_file_name + '"' + more_args*','
-            update_call += ')'
-            eval(update_call)
+            args = ['self.sections["'+type(section).__name__+'"].update']
+            arguments = {
+                'num_processed': 'num_processed=self.num_processed',
+                'current_file': 'current_file=processed_file_name'
+            }
+            for arg in section.update.__code__.co_varnames:
+                if arg == 'self': pass
+                else:
+                    try: args.append(arguments[arg])
+                    except KeyError as e: print(e)
+            eval('partial(' + ', '.join(args) + ')()')
         self._print_sections()
 
     def _print_header_row(self):
