@@ -21,8 +21,6 @@ def upload_manifest_to_s3(bucket, prefix, output_file_name, manifest):
 
 def log_unsuccessful_upload(exception, message):
     error_message = 'UPLOAD UNSUCCESSFUL: {0}\nEXCEPTION:'.format(message)
-    exception_message = ''
-    for line in map(lambda e: '\t'+e+'\n', textwrap.wrap(str(exception), 96)):
-        exception_message += line
+    exception_message = ''.join(['\t'+e+'\n' for e in textwrap.wrap(str(exception), 96)])
     print(colored(error_message, 'red'))
     print(colored(exception_message, 'red'))

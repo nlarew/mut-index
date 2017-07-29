@@ -35,15 +35,8 @@ def main():
 
     print_intro_message(root, output, url, include_globally)
     manifest = Index(url, root, include_globally, no_progress_bar).build()#filetype='json')
-    #upload_manifest_to_s3(bucket, prefix, output, manifest)
-    print(type(manifest['documents']))
-    for x in manifest['documents']:#filter(lambda d: d['preview'] is 'No good preview found.', manifest['documents']):
-        print(x['preview'])
-    #with open('/Users/nick/VirtualEnvProjects/mut-index/cloud-manifest.json', 'w') as m:
-        #m.write(manifest2)
-    
-
-    #refresh_marian()
+    upload_manifest_to_s3(bucket, prefix, output, manifest)
+    refresh_marian()
     print('\nAll according to plan!\n')
 
 if __name__ == "__main__":
