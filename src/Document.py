@@ -3,6 +3,7 @@ import sys
 import html
 import html5_parser
 import re
+import urllib.parse
 from lxml import etree
 from lxml.cssselect import CSSSelector
 
@@ -12,8 +13,9 @@ def node_to_text(node):
 
 class Document:
     '''Return indexing data from an html document.'''
-    def __init__(self, root_dir_path, html_document_path):
+    def __init__(self, base_url, root_dir_path, html_document_path):
         # Paths
+        self._base_url = base_url
         self._root_dir_path = root_dir_path
         self._html_document_path = html_document_path
 
@@ -30,6 +32,7 @@ class Document:
         self.text     = self.get_page_text()
         self.preview  = self.get_page_preview()
         self.tags     = self.get_page_tags()
+        self.links    = self.get_page_links()
 
     def get_url_slug(self):
         '''Return the slug after the base url.'''
@@ -49,7 +52,7 @@ class Document:
             heading = node_to_text(heading)
             if not heading or heading[:1] == "<":
                 continue
-            all_headings.append(heading)
+            all_headings.append(heading.rstrip('\u00b6'))
         return all_headings
 
     def get_page_text(self):
@@ -117,6 +120,20 @@ class Document:
         else:
             return meta_keywords[0].get('content')
 
+    def get_page_links(self):
+        links = set()
+        sel = CSSSelector('.body .section a')
+        for link in sel(self._html_main_column):
+            href = link.get('href')
+            if not href or href.startswith('#'):
+                continue
+
+            href = urllib.parse.urljoin(self._base_url.rstrip('/') + '/' + self.get_url_slug(), href)
+            if href and not href.startswith('#'):
+                links.add(re.sub('#.*$', '', href))
+
+        return list(links)
+
     def export(self):
         '''Generate the manifest dictionary for an html page.'''
         document = {
@@ -125,6 +142,7 @@ class Document:
             "headings": self.headings,
             "text": self.text,
             "preview": self.preview,
-            "tags": self.tags
+            "tags": self.tags,
+            "links": self.links
         }
         return document

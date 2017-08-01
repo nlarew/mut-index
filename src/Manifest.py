@@ -64,7 +64,7 @@ class Manifest:
     def _parse_html_file(self, html_file):
         '''Open the html file with the given path then parse the file.'''
         with open(html_file, 'r') as doc:
-            return Document(self.root_dir, doc).export()
+            return Document(self.manifest['url'], self.root_dir, doc).export()
 
     def _summarize_build(self):
         summary = '\nFinished indexing!\nIndexed {num_docs} documents in {time} seconds.'
