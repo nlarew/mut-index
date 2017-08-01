@@ -15,15 +15,12 @@ def refresh_marian():
     try:
         r = wait_for_response('Attempting to refresh Marian', requests.post, refresh_url, data={}, timeout=30)
         r.raise_for_status()
-        print(colored('Succesfully sent REFRESH request to Marian.', 'green'))
+        print(colored('Succesfully refreshed Marian.', 'green'))
         if r.status_code != 200:
             print(colored('...but received unexpected HTTP Response Code:'+ str(r.status_code), 'yellow'))
     except ConnectionError as ex:
         log_unsuccessful('refresh')(ex, 'Unable to connect to the Marian Server.')
-        sys.exit()
     except requests.exceptions.Timeout as ex:
         log_unsuccessful('refresh')(ex, 'Marian took too long to respond.')
-        sys.exit()
     except requests.exceptions.HTTPError as ex:
         log_unsuccessful('refresh')(ex, 'HTTP Error.')
-        sys.exit()

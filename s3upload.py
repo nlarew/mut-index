@@ -17,7 +17,6 @@ def upload_manifest_to_s3(bucket, prefix, output_file_name, manifest):
         print(colored('Successfully connected to s3.', 'green'))
     except Exception as ex:
         log_unsuccessful('connection')(ex, 'Unable to connect to s3.')
-        sys.exit()
 
     try:
         s = wait_for_response(
@@ -30,8 +29,6 @@ def upload_manifest_to_s3(bucket, prefix, output_file_name, manifest):
         success_message = 'Successfully uploaded manifest to {0} as {1}'.format(bucket, key)
         print(colored(success_message, 'green'))
     except botocore.exceptions.ParamValidationError as ex:
-        log_unsuccessful('upload')(ex, 'Unable to upload to s3.')
-        sys.exit()
+        log_unsuccessful('upload')(ex, 'Unable to upload to s3. This is likely due to a bad manifest file. Check the file type and syntax.')
     except Exception as ex:
         log_unsuccessful('upload')(ex, 'Unable to upload to s3.')
-        sys.exit()
