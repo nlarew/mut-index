@@ -13,15 +13,15 @@ Usage:
     -s, --show-progress    Shows a progress bar and other information via stdout.
 '''
 # external/built-in imports
-import sys, os
+import sys, os, time
 sys.path.append(os.getcwd())
-import time
-from docopt import docopt
+from docopt              import docopt
 # internal imports
 from Manifest            import Manifest
+from MarianActions       import refresh_marian, FailedRefreshError
 from s3upload            import upload_manifest_to_s3
-from MarianActions       import refresh_marian
 from utils.IntroMessage  import print_intro_message
+from utils.Logger        import log_unsuccessful
 
 def main():
     '''Generate index files.'''
@@ -37,8 +37,15 @@ def main():
     print_intro_message(root, output, url, include_globally)
     manifest = Manifest(url, root, include_globally, show_progress).build(filetype='json')
     backup = upload_manifest_to_s3(bucket, prefix, output, manifest)
-    refresh_marian(backup)
-    print('\nAll according to plan!\n')
+    try:
+        refresh_marian()
+    except FailedRefreshError as ex:
+        backup.restore()
+    else:
+        print('\nAll according to plan!')
+    finally:
+        print('\n')
+
 
 if __name__ == "__main__":
     main()

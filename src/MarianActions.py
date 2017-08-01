@@ -1,14 +1,13 @@
 import sys
 import requests
-from termcolor import colored
-
-from src.s3upload import upload_manifest_to_s3
-from utils.AwaitResponse import wait_for_response
-from utils.Logger import log_unsuccessful
+from termcolor            import colored
+from src.s3upload         import upload_manifest_to_s3
+from utils.AwaitResponse  import wait_for_response
+from utils.Logger         import log_unsuccessful
 
 MARIAN_URL = 'https://marian.mongodb.com/'
 
-def refresh_marian(backup=None):
+def refresh_marian():
     print("\n### Refreshing Marian\n")
     refresh_url = MARIAN_URL+'refresh'
     try:
@@ -18,14 +17,13 @@ def refresh_marian(backup=None):
         if r.status_code != 200:
             print(colored('...but received unexpected HTTP Response Code:'+ str(r.status_code), 'yellow'))
     except ConnectionError as ex:
-        log_unsuccessful('refresh')(ex, 'Unable to connect to the Marian Server.', exit=False)
-        if backup: backup.restore()
-        else: sys.exit()
+        raise FailedRefreshError(ex, 'Unable to connect to the Marian Server.')
     except requests.exceptions.Timeout as ex:
-        log_unsuccessful('refresh')(ex, 'Marian took too long to respond.', exit=False)
-        if backup: backup.restore()
-        else: sys.exit()
+        raise FailedRefreshError(ex, 'Marian took too long to respond.')
     except requests.exceptions.HTTPError as ex:
-        log_unsuccessful('refresh')(ex, 'HTTP Error.', exit=False)
-        if backup: backup.restore()
-        else: sys.exit()
+        raise FailedRefreshError(ex, 'HTTP Error.')
+
+class FailedRefreshError(Exception):
+    def __init__(self, exception, message):
+        log_unsuccessful('refresh')(exception=exception, message=message, exit=False)
+    # def __str__(self):
