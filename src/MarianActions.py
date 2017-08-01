@@ -1,11 +1,9 @@
 import sys
 import requests
-import time
-import textwrap
 from termcolor import colored
 
-from s3upload import upload_manifest_to_s3
-from AwaitResponse import wait_for_response
+from src.s3upload import upload_manifest_to_s3
+from utils.AwaitResponse import wait_for_response
 from utils.Logger import log_unsuccessful
 
 MARIAN_URL = 'https://marian.mongodb.com/'

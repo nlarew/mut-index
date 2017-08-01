@@ -13,14 +13,15 @@ Usage:
     -s, --show-progress    Shows a progress bar and other information via stdout.
 '''
 # external/built-in imports
-import os
+import sys, os
+sys.path.append(os.getcwd())
 import time
 from docopt import docopt
 # internal imports
-from Index         import Index
-from s3upload      import upload_manifest_to_s3
-from IntroMessage  import print_intro_message
-from MarianActions import refresh_marian
+from Index               import Index
+from s3upload            import upload_manifest_to_s3
+from MarianActions       import refresh_marian
+from utils.IntroMessage  import print_intro_message
 
 def main():
     '''Generate index files.'''

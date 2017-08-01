@@ -6,7 +6,7 @@ import textwrap
 import urllib.parse
 from termcolor import colored
 
-from AwaitResponse import wait_for_response
+from utils.AwaitResponse import wait_for_response
 from utils.Logger import log_unsuccessful
 
 def upload_manifest_to_s3(bucket, prefix, output_file_name, manifest, backup_current=True):
