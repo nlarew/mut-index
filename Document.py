@@ -61,18 +61,24 @@ class Document:
 
     def get_page_preview(self):
         '''Return a summary of the page.'''
+
         def test_page_preview(preview):
             '''Return False if bad preview.'''
-            is_good_preview = False
-            bad_previews = [
-                re.compile('On this page'),
-                re.compile('\u00a9 MongoDB, Inc. 2008-2017'),
-                re.compile('Run.'),
-                re.compile('Base URL.'),
-                re.compile('The Atlas API uses HTTP Digest Authentication.')
-            ]
-            is_good_preview = not any(map(lambda bp: bp.match(preview), bad_previews))
-            return is_good_preview
+            def blacklisted(slug):
+                blacklist = [
+                    '/reference/api.',
+                    '/reference.html',
+                ]
+                return any([re.compile(item).match(slug) for item in blacklist])
+            def is_good_preview(preview):
+                bad_previews = [
+                    'On this page',
+                    '\u00a9 MongoDB, Inc. 2008-2017',
+                    'Run.',
+                    '\s'
+                ]
+                return not any([re.compile(p).match(preview) for p in bad_previews])
+            return is_good_preview(preview) if not blacklisted(self.slug) else False
 
         def set_to_meta_description():
             '''Set preview to the page's meta description.'''
@@ -85,28 +91,21 @@ class Document:
                 if is_good_preview:
                     return candidate_preview
             return False
+
         def set_to_first_paragraph():
             '''Set preview to the first descriptive paragraph on the page.'''
-            preview = 'No good preview found.'
-            candidate_selectors = [ #Order is very important! The first good preview is selected without further search.
-                '.section > p:first-of-type'
-                # 'div .main-column .section > p:first-of-type'
-            ]
-            for selector in candidate_selectors:
-                candidate_list = self._html_main_column.cssselect(selector)
-                if len(candidate_list) > 0: #Check if the selector found ANY p tags
-                    candidate_preview = candidate_list[0]
-                    if type(candidate_preview) is etree._Element and candidate_preview.tag == 'p':
-                        candidate_preview = node_to_text(candidate_preview)
-                    is_good_preview = test_page_preview(candidate_preview)
-                    if is_good_preview:
-                        preview = candidate_preview
-                        break
-            return preview
-        page_preview = set_to_meta_description()
-        if not page_preview:
-            page_preview = set_to_first_paragraph()
-        page_preview = ' '.join(page_preview.split())
+            candidate_list = self._html_main_column.cssselect('.section > p')
+            for candidate_preview in candidate_list:
+                if type(candidate_preview) is etree._Element and candidate_preview.tag == 'p':
+                    candidate_preview = node_to_text(candidate_preview)
+                is_good_preview = test_page_preview(candidate_preview)
+                if is_good_preview:
+                    return candidate_preview
+            else:
+                return False
+
+        page_preview = set_to_meta_description() or set_to_first_paragraph()
+        page_preview = ' '.join(page_preview.split()) if page_preview else ''
         return page_preview
 
     def get_page_tags(self):

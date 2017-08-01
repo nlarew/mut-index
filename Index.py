@@ -27,8 +27,7 @@ class Index:
         self.num_documents_processed = 0
         self.start_time = time.time()
         self.html_files = self._get_html_files()
-        if show_progress:
-            self.progress_bar = ProgressBar.ProgressBar(start_time=self.start_time, num_documents=len(self.html_files))
+        self.progress_bar = ProgressBar.ProgressBar(start_time=self.start_time, num_documents=len(self.html_files)) if show_progress else None
 
     def build(self, filetype=None):
         '''Build the index from scratch.'''
