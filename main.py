@@ -35,8 +35,8 @@ def main():
 
     print_intro_message(root, output, url, include_globally)
     manifest = Index(url, root, include_globally, show_progress).build(filetype='json')
-    upload_manifest_to_s3(bucket, prefix, output, manifest)
-    refresh_marian()
+    backup = upload_manifest_to_s3(bucket, prefix, output, manifest)
+    refresh_marian(backup)
     print('\nAll according to plan!\n')
 
 if __name__ == "__main__":

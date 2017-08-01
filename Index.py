@@ -2,7 +2,7 @@ import os, sys, time, math, json
 import concurrent.futures
 from termcolor import colored
 
-import ProgressBar
+import utils.ProgressBar as ProgressBar
 from Document import Document
 
 class Index:
