@@ -1,6 +1,6 @@
 '''
 Usage:
-    mut-index <root> -o <output> -u <url> [-b <bucket> -p <prefix> -g, --no-progress]
+    mut-index <root> -o <output> -u <url> [-b <bucket> -p <prefix> -g, --show-progress]
 
     -h, --help             List CLI prototype, arguments, and options.
     <root>                 Path to the directory containing html files.
@@ -10,7 +10,7 @@ Usage:
     -b, --bucket <bucket>  Name of the s3 bucket to upload the index manifest to. [default: docs-mongodb-org-prod]
     -p, --prefix <prefix>  Name of the s3 prefix to attached to the manifest. [default: search-indexes]
     -g, --global           Includes the manifest when searching all properties.
-    --no-progress          Hides the progress bar.
+    -s, --show-progress    Shows a progress bar and other information via stdout.
 '''
 # external/built-in imports
 import os
@@ -31,10 +31,10 @@ def main():
     bucket           = options['--bucket']
     prefix           = options['--prefix']
     include_globally = options['--global']
-    no_progress_bar  = options['--no-progress']
+    show_progress    = options['--show-progress']
 
     print_intro_message(root, output, url, include_globally)
-    manifest = Index(url, root, include_globally, no_progress_bar).build()#filetype='json')
+    manifest = Index(url, root, include_globally, show_progress).build(filetype='json')
     upload_manifest_to_s3(bucket, prefix, output, manifest)
     refresh_marian()
     print('\nAll according to plan!\n')

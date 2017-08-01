@@ -117,5 +117,6 @@ class ProgressBar():
                 section_string += key + '=' + str(value) + ','
             section_string = section_string[:-1] + ').rjust(int(str(section.width)), " ")'
             section_row += eval(section_string) + '   '
-        sys.stdout.write("\033[K") # Delete contents of stdout line.
+        #sys.stdout.write("\033[K") # Delete contents of stdout line.
+        print("\033[K", end='\r')
         print(section_row, end='\r') # Print to stdout without newline then carriage return.

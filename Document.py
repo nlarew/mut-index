@@ -123,7 +123,7 @@ class Document:
         document = {
             "slug": self.slug,
             "title": self.title,
-            #"headings": self.headings,
+            "headings": self.headings,
             "text": self.text,
             "preview": self.preview,
             "tags": self.tags
