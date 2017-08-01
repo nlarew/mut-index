@@ -5,7 +5,7 @@ from termcolor import colored
 from utils.ProgressBar import ProgressBar
 from Document import Document
 
-class Index:
+class Manifest:
     '''Build the index and compile a manifest.'''
     def __init__(self, base_url, root_dir, include_in_global_search, show_progress):
         self.root_dir = root_dir

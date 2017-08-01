@@ -18,7 +18,7 @@ sys.path.append(os.getcwd())
 import time
 from docopt import docopt
 # internal imports
-from Index               import Index
+from Manifest            import Manifest
 from s3upload            import upload_manifest_to_s3
 from MarianActions       import refresh_marian
 from utils.IntroMessage  import print_intro_message
@@ -35,7 +35,7 @@ def main():
     show_progress    = options['--show-progress']
 
     print_intro_message(root, output, url, include_globally)
-    manifest = Index(url, root, include_globally, show_progress).build(filetype='json')
+    manifest = Manifest(url, root, include_globally, show_progress).build(filetype='json')
     backup = upload_manifest_to_s3(bucket, prefix, output, manifest)
     refresh_marian(backup)
     print('\nAll according to plan!\n')
