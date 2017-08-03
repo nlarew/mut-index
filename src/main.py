@@ -1,6 +1,7 @@
+# pylint: disable=line-too-long
 '''
 Usage:
-    mut-index <root> -o <output> -u <url> [-b <bucket> -p <prefix> -g, --show-progress]
+    mut-index <root> -o <output> -u <url> [-b <bucket> -p <prefix> -g -s]
 
     -h, --help             List CLI prototype, arguments, and options.
     <root>                 Path to the directory containing html files.
@@ -12,39 +13,32 @@ Usage:
     -g, --global           Includes the manifest when searching all properties.
     -s, --show-progress    Shows a progress bar and other information via stdout.
 '''
-# external/built-in imports
-import sys, os, time
-sys.path.append(os.getcwd())
-from docopt              import docopt
 # internal imports
-from Manifest            import Manifest
-from MarianActions       import refresh_marian, FailedRefreshError
-from s3upload            import upload_manifest_to_s3
-from utils.IntroMessage  import print_intro_message
-from utils.Logger        import log_unsuccessful
+from docopt import docopt
+from Manifest import generate_manifest
+from MarianActions import refresh_marian, FailedRefreshError
+from s3upload import upload_manifest_to_s3
+from utils.IntroMessage import print_intro_message
 
 def main():
     '''Generate index files.'''
-    options          = docopt(__doc__)
-    root             = options['<root>']
-    output           = options['--output']
-    url              = options['--url']
-    bucket           = options['--bucket']
-    prefix           = options['--prefix']
-    include_globally = options['--global']
-    show_progress    = options['--show-progress']
+    options = docopt(__doc__)
+    root = options['<root>']
+    output = options['--output']
+    url = options['--url']
+    bucket = options['--bucket']
+    prefix = options['--prefix']
+    globally = options['--global']
+    show_progress = options['--show-progress']
 
-    print_intro_message(root, output, url, include_globally)
-    manifest = Manifest(url, root, include_globally, show_progress).build(filetype='json')
+    print_intro_message(root, output, url, globally)
+    manifest = generate_manifest(url, root, globally, show_progress)
     backup = upload_manifest_to_s3(bucket, prefix, output, manifest)
     try:
         refresh_marian()
-    except FailedRefreshError as ex:
-        backup.restore()
-    else:
         print('\nAll according to plan!')
-    finally:
-        print('\n')
+    except FailedRefreshError:
+        backup.restore()
 
 
 if __name__ == "__main__":

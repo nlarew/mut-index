@@ -1,15 +1,17 @@
-import os
-import sys
-import html
-import html5_parser
 import re
 import urllib.parse
+import html5_parser
 from lxml import etree
 from lxml.cssselect import CSSSelector
 
 def node_to_text(node):
     '''Convert an lxml node to text.'''
     return ''.join(node.itertext())
+
+def is_element_of_type(candidate, element_type):
+    '''Return True if the candidate element is an element of the givent type.'''
+    is_element = isinstance(candidate, etree._Element)
+    return bool(is_element and candidate.tag == element_type)
 
 class Document:
     '''Return indexing data from an html document.'''
@@ -26,13 +28,13 @@ class Document:
         self._html_main_column = self._html_document.find('.//div[@class="main-column"]')
 
         # Properties
-        self.slug     = self.get_url_slug()
-        self.title    = self.get_page_title()
+        self.slug = self.get_url_slug()
+        self.title = self.get_page_title()
         self.headings = self.get_page_headings()
-        self.text     = self.get_page_text()
-        self.preview  = self.get_page_preview()
-        self.tags     = self.get_page_tags()
-        self.links    = self.get_page_links()
+        self.text = self.get_page_text()
+        self.preview = self.get_page_preview()
+        self.tags = self.get_page_tags()
+        self.links = self.get_page_links()
 
     def get_url_slug(self):
         '''Return the slug after the base url.'''
@@ -68,17 +70,18 @@ class Document:
         def test_page_preview(preview):
             '''Return False if bad preview.'''
             def blacklisted(slug):
+                '''Return True if the file should not have a preview.'''
                 blacklist = [
                     '/reference/api.',
                     '/reference.html',
                 ]
                 return any([re.compile(item).match(slug) for item in blacklist])
             def is_good_preview(preview):
+                '''Return True if the candidate preview should be used.'''
                 bad_previews = [
                     'On this page',
                     '\u00a9 MongoDB, Inc. 2008-2017',
-                    'Run.',
-                    '\s'
+                    'Run.'
                 ]
                 return not any([re.compile(p).match(preview) for p in bad_previews])
             return is_good_preview(preview) if not blacklisted(self.slug) else False
@@ -86,9 +89,9 @@ class Document:
         def set_to_meta_description():
             '''Set preview to the page's meta description.'''
             candidate_list = self._html_document.cssselect('meta[name="description"]')
-            if len(candidate_list) > 0: #Check if the selector found ANY meta[name="description"] tags
+            if candidate_list:
                 candidate_preview = candidate_list[0]
-                if type(candidate_preview) is etree._Element and candidate_preview.tag == 'meta':
+                if is_element_of_type(candidate_preview, 'meta'):
                     candidate_preview = candidate_preview.get('content')
                 is_good_preview = test_page_preview(candidate_preview)
                 if is_good_preview:
@@ -99,13 +102,12 @@ class Document:
             '''Set preview to the first descriptive paragraph on the page.'''
             candidate_list = self._html_main_column.cssselect('.section > p')
             for candidate_preview in candidate_list:
-                if type(candidate_preview) is etree._Element and candidate_preview.tag == 'p':
+                if is_element_of_type(candidate_preview, 'p'):
                     candidate_preview = node_to_text(candidate_preview)
                 is_good_preview = test_page_preview(candidate_preview)
                 if is_good_preview:
                     return candidate_preview
-            else:
-                return False
+            return False
 
         page_preview = set_to_meta_description() or set_to_first_paragraph()
         page_preview = ' '.join(page_preview.split()) if page_preview else ''
@@ -117,18 +119,18 @@ class Document:
         meta_keywords = sel(self._html_document)
         if not meta_keywords:
             return ''
-        else:
-            return meta_keywords[0].get('content')
+        return meta_keywords[0].get('content')
 
     def get_page_links(self):
+        '''Return all links to other pages in the documentation.'''
         links = set()
         sel = CSSSelector('.body .section a')
         for link in sel(self._html_main_column):
             href = link.get('href')
             if not href or href.startswith('#'):
                 continue
-
-            href = urllib.parse.urljoin(self._base_url.rstrip('/') + '/' + self.get_url_slug(), href)
+            base = self._base_url.rstrip('/') + '/' + self.get_url_slug()
+            href = urllib.parse.urljoin(base, href)
             if href and not href.startswith('#'):
                 links.add(re.sub('#.*$', '', href))
 
@@ -146,3 +148,11 @@ class Document:
             "links": self.links
         }
         return document
+
+# Is there a way to just dump the manifest without uploading it?
+
+# What if you have a `--upload` argument? If not given, it dumps to the≤
+# output file. If given an empty value, it uploads to the default
+# bucket. Otherwise, uploads to the given bucket?
+
+# Yet more feedback: if there's an error, `mut-index` should display the full path of the file that it broke on in addition to showing the backtrace
