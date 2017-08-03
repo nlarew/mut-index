@@ -1,7 +1,8 @@
 # pylint: disable=line-too-long
 '''
 Usage:
-    mut-index <root> -o <output> -u <url> [-b <bucket> -p <prefix> -g -s]
+    mut-index <root> -o <output> -u <url> [-g -s]
+    mut-index upload [-b <bucket> -p <prefix>] <root> -o <output> -u <url> [-g -s]
 
     -h, --help             List CLI prototype, arguments, and options.
     <root>                 Path to the directory containing html files.
@@ -13,12 +14,12 @@ Usage:
     -g, --global           Includes the manifest when searching all properties.
     -s, --show-progress    Shows a progress bar and other information via stdout.
 '''
-# internal imports
 from docopt import docopt
 from Manifest import generate_manifest
-from MarianActions import refresh_marian, FailedRefreshError
 from s3upload import upload_manifest_to_s3
+from MarianActions import refresh_marian, FailedRefreshError
 from utils.IntroMessage import print_intro_message
+
 
 def main():
     '''Generate index files.'''
@@ -26,19 +27,21 @@ def main():
     root = options['<root>']
     output = options['--output']
     url = options['--url']
-    bucket = options['--bucket']
-    prefix = options['--prefix']
     globally = options['--global']
     show_progress = options['--show-progress']
 
     print_intro_message(root, output, url, globally)
     manifest = generate_manifest(url, root, globally, show_progress)
-    backup = upload_manifest_to_s3(bucket, prefix, output, manifest)
-    try:
-        refresh_marian()
-        print('\nAll according to plan!')
-    except FailedRefreshError:
-        backup.restore()
+    if options['upload']:
+        bucket = options['--bucket']
+        prefix = options['--prefix']
+        backup = upload_manifest_to_s3(bucket, prefix, output, manifest)
+        try:
+            refresh_marian()
+            print('\nAll according to plan!')
+        except FailedRefreshError:
+            if backup:
+                backup.restore()
 
 
 if __name__ == "__main__":

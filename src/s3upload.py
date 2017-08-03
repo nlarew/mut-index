@@ -1,8 +1,9 @@
 '''Upload a json manifest to Amazon s3.'''
 import os
 import boto3
-import botocore
-from termcolor import colored
+from botocore.exceptions import ClientError, ParamValidationError
+#from termcolor import colored
+def colored(s, c): return(s)
 
 from utils.AwaitResponse import wait_for_response
 from utils.Logger import log_unsuccessful
@@ -19,9 +20,12 @@ def upload_manifest_to_s3(bucket, prefix, output_file, manifest, backup=True):
 
     # Connect to s3
     try:
-        s3 = wait_for_response('Opening connection to s3', boto3.resource, 's3')
+        s3 = wait_for_response(
+            'Opening connection to s3',
+            boto3.resource, 's3'
+        )
         print(colored('Successfully connected to s3.', 'green'))
-    except Exception as ex:
+    except ClientError as ex:
         log_unsuccessful('connection')(ex, 'Unable to connect to s3.')
 
     # Backup current manifest
@@ -45,12 +49,12 @@ def upload_manifest_to_s3(bucket, prefix, output_file, manifest, backup=True):
         success_message = ('Successfully uploaded manifest '
                            'to {0} as {1}').format(bucket, key)
         print(colored(success_message, 'green'))
-    except botocore.exceptions.ParamValidationError as ex:
-        message = ('Unable to upload to s3. '
-                   'This is likely due to a bad manifest file. '
-                   'Check the file type and syntax.')
+    except ParamValidationError as ex:
+        message = ' '.join(['Unable to upload to s3.'
+                            'This is likely due to a bad manifest file.'
+                            'Check the file type and syntax.'])
         log_unsuccessful('upload')(ex, message)
-    except Exception as ex:
+    except ClientError as ex:
         log_unsuccessful('upload')(ex, 'Unable to upload to s3.')
 
     return backup
@@ -63,11 +67,11 @@ class Backup:
         self.prefix = prefix
         self.output_file = output_file
         self.key = self.prefix + self.output_file
+        self.backup_directory = '/Users/nick/virtualenvs/mut-index/backups/'
         try:
-            os.mkdir('./backups/')
+            os.mkdir(self.backup_directory)
         except FileExistsError:
             pass
-        self.backup_directory = './backups/'
         self.backup_path = self.backup_directory + self.output_file
 
     def create(self):
@@ -82,7 +86,7 @@ class Backup:
             print(colored('Successfully backed up current manifest from s3.',
                           'green'))
             return True
-        except Exception as ex:
+        except ClientError as ex:
             message = 'Unable to backup current manifest from s3.'
             log_unsuccessful('backup')(ex, message, exit=False)
             return False
@@ -99,7 +103,8 @@ class Backup:
                     ContentType='application/json'
                 )
             print(colored('Successfully restored backup to s3.', 'green'))
-        except Exception as ex:
-            message = ('Unable to restore backup to s3. '
-                       'Search is definitely out of sync.')
+        except ClientError as ex:
+            message = ['Unable to restore backup to s3.',
+                       'Search is definitely out of sync.']
+            message = ' '.join(message)
             log_unsuccessful('backup restore')(ex, message)

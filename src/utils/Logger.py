@@ -1,6 +1,7 @@
 import sys
 from functools import partial
-from termcolor import colored
+# from termcolor import colored
+def colored(s, c): return(s)
 import textwrap
 
 def _log_unsuccessful_action(exception, message, action, exit=True):

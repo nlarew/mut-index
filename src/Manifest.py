@@ -3,7 +3,8 @@ import os
 import time
 import json
 import concurrent.futures
-from termcolor import colored
+# from termcolor import colored
+def colored(s, c): return(s)
 
 from utils.ProgressBar import ProgressBar
 from Document import Document
@@ -49,6 +50,8 @@ def generate_manifest(url, root_dir, globally, show_progress):
     if show_progress:
         progress_bar = ProgressBar(start_time=start_time,
                                    num_documents=num_documents)
+    else:
+        progress_bar = None
     _process_html_files(html_path_info, manifest, progress_bar)
     _summarize_build(num_documents, start_time)
     return manifest.json()

@@ -4,28 +4,31 @@ import html5_parser
 from lxml import etree
 from lxml.cssselect import CSSSelector
 
+
 def node_to_text(node):
     '''Convert an lxml node to text.'''
     return ''.join(node.itertext())
 
+
 def is_element_of_type(candidate, element_type):
-    '''Return True if the candidate element is an element of the givent type.'''
+    '''Return True if the candidate element is an element of the given type.'''
     is_element = isinstance(candidate, etree._Element)
     return bool(is_element and candidate.tag == element_type)
 
+
 class Document:
     '''Return indexing data from an html document.'''
-    def __init__(self, base_url, root_dir_path, html_document_path):
+    def __init__(self, base_url, root_dir, html_document_path):
         # Paths
         self._base_url = base_url
-        self._root_dir_path = root_dir_path
-        self._html_document_path = html_document_path
+        self._root_dir = root_dir
+        self._document_path = html_document_path
 
         # Document Trees
         text = html_document_path.read()
         capsule = html5_parser.html_parser.parse(text, maybe_xhtml=True)
-        self._html_document = etree.adopt_external_document(capsule).getroot()
-        self._html_main_column = self._html_document.find('.//div[@class="main-column"]')
+        self._html = etree.adopt_external_document(capsule).getroot()
+        self._main_column = self._html.find('.//div[@class="main-column"]')
 
         # Properties
         self.slug = self.get_url_slug()
@@ -38,19 +41,19 @@ class Document:
 
     def get_url_slug(self):
         '''Return the slug after the base url.'''
-        url_slug = self._html_document_path.name.__str__()[len(self._root_dir_path):]
+        url_slug = str(self._document_path.name)[len(self._root_dir):]
         return url_slug
 
     def get_page_title(self):
         '''Return the title of the page.'''
         sel = CSSSelector('title:first-of-type')
-        page_title = node_to_text(sel(self._html_document)[0])
+        page_title = node_to_text(sel(self._html)[0])
         return page_title
 
     def get_page_headings(self):
-        '''Return all heading tags (<h1>, <h2>, ..., <h6>) and their contents.'''
+        '''Return all headings (<h1>, <h2>, <h3>).'''
         all_headings = []
-        for heading in self._html_main_column.iter('h1', 'h2', 'h3'):
+        for heading in self._main_column.iter('h1', 'h2', 'h3'):
             heading = node_to_text(heading)
             if not heading or heading[:1] == "<":
                 continue
@@ -60,7 +63,7 @@ class Document:
     def get_page_text(self):
         '''Return the text inside the <body> tag.'''
         sel = CSSSelector('.body')
-        page_text = node_to_text(sel(self._html_main_column)[0])
+        page_text = node_to_text(sel(self._main_column)[0])
         page_text = ' '.join(page_text.split())
         return page_text
 
@@ -75,20 +78,24 @@ class Document:
                     '/reference/api.',
                     '/reference.html',
                 ]
-                return any([re.compile(item).match(slug) for item in blacklist])
-            def is_good_preview(preview):
+                matches = [re.compile(item).match(slug) for item in blacklist]
+                return any(matches)
+
+            def good_preview(preview):
                 '''Return True if the candidate preview should be used.'''
                 bad_previews = [
                     'On this page',
                     '\u00a9 MongoDB, Inc. 2008-2017',
                     'Run.'
                 ]
-                return not any([re.compile(p).match(preview) for p in bad_previews])
-            return is_good_preview(preview) if not blacklisted(self.slug) else False
+                matches = [re.compile(p).match(preview) for p in bad_previews]
+                return not any(matches)
+
+            return bool(good_preview(preview) and not blacklisted(self.slug))
 
         def set_to_meta_description():
             '''Set preview to the page's meta description.'''
-            candidate_list = self._html_document.cssselect('meta[name="description"]')
+            candidate_list = self._html.cssselect('meta[name="description"]')
             if candidate_list:
                 candidate_preview = candidate_list[0]
                 if is_element_of_type(candidate_preview, 'meta'):
@@ -100,7 +107,7 @@ class Document:
 
         def set_to_first_paragraph():
             '''Set preview to the first descriptive paragraph on the page.'''
-            candidate_list = self._html_main_column.cssselect('.section > p')
+            candidate_list = self._main_column.cssselect('.section > p')
             for candidate_preview in candidate_list:
                 if is_element_of_type(candidate_preview, 'p'):
                     candidate_preview = node_to_text(candidate_preview)
@@ -116,7 +123,7 @@ class Document:
     def get_page_tags(self):
         '''Return the tags for the page.'''
         sel = CSSSelector('meta[name="keywords"]')
-        meta_keywords = sel(self._html_document)
+        meta_keywords = sel(self._html)
         if not meta_keywords:
             return ''
         return meta_keywords[0].get('content')
@@ -125,7 +132,7 @@ class Document:
         '''Return all links to other pages in the documentation.'''
         links = set()
         sel = CSSSelector('.body .section a')
-        for link in sel(self._html_main_column):
+        for link in sel(self._main_column):
             href = link.get('href')
             if not href or href.startswith('#'):
                 continue
@@ -148,11 +155,5 @@ class Document:
             "links": self.links
         }
         return document
-
-# Is there a way to just dump the manifest without uploading it?
-
-# What if you have a `--upload` argument? If not given, it dumps to the≤
-# output file. If given an empty value, it uploads to the default
-# bucket. Otherwise, uploads to the given bucket?
 
 # Yet more feedback: if there's an error, `mut-index` should display the full path of the file that it broke on in addition to showing the backtrace

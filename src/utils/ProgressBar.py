@@ -1,6 +1,7 @@
 import time, math, sys
 from functools import partial
-from termcolor import colored
+# from termcolor import colored
+def colored(s, c): return(s)
 
 
 class Section:
