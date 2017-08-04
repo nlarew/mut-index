@@ -42,6 +42,9 @@ def main():
         except FailedRefreshError:
             if backup:
                 backup.restore()
+    else:
+        with open('./' + output, 'w') as file:
+            file.write(manifest)
 
 
 if __name__ == "__main__":

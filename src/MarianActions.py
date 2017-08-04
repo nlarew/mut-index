@@ -1,12 +1,12 @@
 import requests
-# from termcolor import colored
-def colored(s, c): return(s)
+from requests.exceptions import Timeout, HTTPError
 from utils.AwaitResponse import wait_for_response
 from utils.Logger import log_unsuccessful
-
-from requests.exceptions import Timeout, HTTPError
+# from termcolor import colored
+def colored(s, c): return(s)
 
 MARIAN_URL = 'https://marian.mongodb.com/'
+
 
 def refresh_marian():
     print("\n### Refreshing Marian\n")
@@ -28,6 +28,7 @@ def refresh_marian():
         raise FailedRefreshError(ex, 'Marian took too long to respond.')
     except HTTPError as ex:
         raise FailedRefreshError(ex, 'HTTP Error.')
+
 
 class FailedRefreshError(Exception):
     '''Failed to refresh Marian.'''
