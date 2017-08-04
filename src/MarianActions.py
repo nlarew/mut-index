@@ -2,8 +2,6 @@ import requests
 from requests.exceptions import Timeout, HTTPError
 from utils.AwaitResponse import wait_for_response
 from utils.Logger import log_unsuccessful
-# from termcolor import colored
-def colored(s, c): return(s)
 
 MARIAN_URL = 'https://marian.mongodb.com/'
 
@@ -18,11 +16,11 @@ def refresh_marian():
             requests.post, refresh_url, data={}, timeout=30
         )
         res.raise_for_status()
-        print(colored('Succesfully refreshed Marian.', 'green'))
+        print('Succesfully refreshed Marian.')
         if res.status_code != 200:
             message = ' '.join(['...but received unexpected response:',
                                 str(res.status_code)])
-            print(colored(message, 'yellow'))
+            print(message)
     except ConnectionError as ex:
         raise FailedRefreshError(ex, 'Unable to connect to the Marian Server.')
     except Timeout as ex:

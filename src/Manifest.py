@@ -3,8 +3,6 @@ import os
 import time
 import json
 import concurrent.futures
-# from termcolor import colored
-def colored(s, c): return(s)
 
 from utils.Logger import log_unsuccessful
 from utils.ProgressBar import ProgressBar
@@ -97,4 +95,4 @@ def _summarize_build(num_documents, start_time):
                'Indexed {num_docs} documents in {time} seconds.')
     summary = summary.format(num_docs=num_documents,
                              time=str(time.time() - start_time))
-    print(colored(summary, 'green'))
+    print(summary)

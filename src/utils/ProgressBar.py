@@ -1,7 +1,5 @@
 import time, math, sys
 from functools import partial
-# from termcolor import colored
-def colored(s, c): return(s)
 
 
 class Section:
@@ -38,14 +36,9 @@ class Percentage(Section):
         self.num_documents = num_documents
     def update(self, num_processed):
         self.data['percent_done'] = 100*(num_processed / self.num_documents)
-        self.data['done'] = self._colorize(u'\u2588' * math.floor(30*self.data['percent_done']/100))
+        self.data['done'] = u'\u2588' * math.floor(30*self.data['percent_done']/100)
         self.data['todo'] = ' ' * (30 - math.floor(30*self.data['percent_done']/100))
-    def _colorize(self, input_string):
-        if self.data['percent_done'] == 100:
-            color = 'green'
-        else:
-            color = 'blue'
-        return colored(input_string, color)
+
 
 class Counter(Section):
     def __init__(self, num_documents):

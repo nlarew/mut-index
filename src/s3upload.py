@@ -2,8 +2,6 @@
 import os
 import boto3
 from botocore.exceptions import ClientError, ParamValidationError
-#from termcolor import colored
-def colored(s, c): return(s)
 
 from utils.AwaitResponse import wait_for_response
 from utils.Logger import log_unsuccessful
@@ -24,7 +22,7 @@ def upload_manifest_to_s3(bucket, prefix, output_file, manifest, backup=True):
             'Opening connection to s3',
             boto3.resource, 's3'
         )
-        print(colored('Successfully connected to s3.', 'green'))
+        print('Successfully connected to s3.')
     except ClientError as ex:
         log_unsuccessful('connection')(ex, 'Unable to connect to s3.')
 
@@ -48,7 +46,7 @@ def upload_manifest_to_s3(bucket, prefix, output_file, manifest, backup=True):
         )
         success_message = ('Successfully uploaded manifest '
                            'to {0} as {1}').format(bucket, key)
-        print(colored(success_message, 'green'))
+        print(success_message)
     except ParamValidationError as ex:
         message = ' '.join(['Unable to upload to s3.'
                             'This is likely due to a bad manifest file.'
@@ -83,8 +81,7 @@ class Backup:
                 self.key,
                 self.backup_path
             )
-            print(colored('Successfully backed up current manifest from s3.',
-                          'green'))
+            print('Successfully backed up current manifest from s3.')
             return True
         except ClientError as ex:
             message = 'Unable to backup current manifest from s3.'
@@ -102,7 +99,7 @@ class Backup:
                     Body=backup.read(),
                     ContentType='application/json'
                 )
-            print(colored('Successfully restored backup to s3.', 'green'))
+            print('Successfully restored backup to s3.')
         except ClientError as ex:
             message = ['Unable to restore backup to s3.',
                        'Search is definitely out of sync.']
