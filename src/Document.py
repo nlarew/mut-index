@@ -1,6 +1,6 @@
 import re
 import urllib.parse
-import html5_parser
+from html5_parser import html_parser
 from lxml import etree
 from lxml.cssselect import CSSSelector
 
@@ -9,29 +9,37 @@ def node_to_text(node):
     '''Convert an lxml node to text.'''
     return ''.join(node.itertext())
 
+def return_text_from_node(func):
+    '''Wraps node_to_text around a function that returns an lxml node.'''
+    def textify(*args, **kwargs):
+        output = func(*args, **kwargs)
+        if isinstance(output, str):
+            return output
+        elif is_element_of_type(output, '_any'):
+            return node_to_text(output)
+    return textify
+
 
 def is_element_of_type(candidate, element_type):
     '''Return True if the candidate element is an element of the given type.'''
     is_element = isinstance(candidate, etree._Element)
+    if element_type == '_any':
+        return is_element
     return bool(is_element and candidate.tag == element_type)
 
 
 class Document:
     '''Return indexing data from an html document.'''
-    def __init__(self, base_url, root_dir, html_document_path):
+    def __init__(self, base_url, root_dir, path):
         # Paths
         self._base_url = base_url
         self._root_dir = root_dir
-        self._document_path = html_document_path
 
         # Document Trees
-        text = html_document_path.read()
-        capsule = html5_parser.html_parser.parse(text, maybe_xhtml=True)
-        self._html = etree.adopt_external_document(capsule).getroot()
-        self._main_column = self._html.find('.//div[@class="main-column"]')
+        self.html = self.parse_html(path)
 
         # Properties
-        self.slug = self.get_url_slug()
+        self.slug = self.get_url_slug(path)
         self.title = self.get_page_title()
         self.headings = self.get_page_headings()
         self.text = self.get_page_text()
@@ -39,33 +47,45 @@ class Document:
         self.tags = self.get_page_tags()
         self.links = self.get_page_links()
 
-    def get_url_slug(self):
+    def parse_html(self, path):
+        '''Return head and content elements of the document.'''
+        capsule = html_parser.parse(path.read(), maybe_xhtml=True)
+        doc = etree.adopt_external_document(capsule).getroot()
+        slug = self.get_url_slug(path)[:-5]
+        selectors = {
+            'head': 'head',
+            'main_content': ' '.join(['.main-column', '.section'])
+        }
+        try:
+            return {k: doc.cssselect(sel)[0] for k, sel in selectors.items()}
+        except IndexError:
+            print(path)
+
+    def get_url_slug(self, path):
         '''Return the slug after the base url.'''
-        url_slug = str(self._document_path.name)[len(self._root_dir):]
+        url_slug = str(path.name)[len(self._root_dir):]
         return url_slug
 
+    @return_text_from_node
     def get_page_title(self):
         '''Return the title of the page.'''
-        sel = CSSSelector('title:first-of-type')
-        page_title = node_to_text(sel(self._html)[0])
+        page_title = self.html['head'].cssselect('title')[0]
         return page_title
 
     def get_page_headings(self):
         '''Return all headings (<h1>, <h2>, <h3>).'''
         all_headings = []
-        for heading in self._main_column.iter('h1', 'h2', 'h3'):
+        for heading in self.html['main_content'].iter('h1', 'h2', 'h3'):
             heading = node_to_text(heading)
             if not heading or heading[:1] == "<":
                 continue
             all_headings.append(heading.rstrip('\u00b6'))
         return all_headings
 
+    @return_text_from_node
     def get_page_text(self):
         '''Return the text inside the <body> tag.'''
-        sel = CSSSelector('.body')
-        page_text = node_to_text(sel(self._main_column)[0])
-        page_text = ' '.join(page_text.split())
-        return page_text
+        return self.html['main_content']
 
     def get_page_preview(self):
         '''Return a summary of the page.'''
@@ -95,7 +115,7 @@ class Document:
 
         def set_to_meta_description():
             '''Set preview to the page's meta description.'''
-            candidate_list = self._html.cssselect('meta[name="description"]')
+            candidate_list = self.html['head'].cssselect('meta[name="description"]')
             if candidate_list:
                 candidate_preview = candidate_list[0]
                 if is_element_of_type(candidate_preview, 'meta'):
@@ -107,7 +127,7 @@ class Document:
 
         def set_to_first_paragraph():
             '''Set preview to the first descriptive paragraph on the page.'''
-            candidate_list = self._main_column.cssselect('.section > p')
+            candidate_list = self.html['main_content'].cssselect('p')
             for candidate_preview in candidate_list:
                 if is_element_of_type(candidate_preview, 'p'):
                     candidate_preview = node_to_text(candidate_preview)
@@ -122,8 +142,7 @@ class Document:
 
     def get_page_tags(self):
         '''Return the tags for the page.'''
-        sel = CSSSelector('meta[name="keywords"]')
-        meta_keywords = sel(self._html)
+        meta_keywords = self.html['head'].cssselect('meta[name="keywords"]')
         if not meta_keywords:
             return ''
         return meta_keywords[0].get('content')
@@ -131,16 +150,14 @@ class Document:
     def get_page_links(self):
         '''Return all links to other pages in the documentation.'''
         links = set()
-        sel = CSSSelector('.body .section a')
-        for link in sel(self._main_column):
+        for link in self.html['main_content'].cssselect('a'):
             href = link.get('href')
             if not href or href.startswith('#'):
                 continue
-            base = self._base_url.rstrip('/') + '/' + self.get_url_slug()
+            base = self._base_url.rstrip('/') + '/' + self.slug
             href = urllib.parse.urljoin(base, href)
             if href and not href.startswith('#'):
                 links.add(re.sub('#.*$', '', href))
-
         return list(links)
 
     def export(self):
