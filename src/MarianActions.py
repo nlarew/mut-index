@@ -9,18 +9,19 @@ MARIAN_URL = 'https://marian.mongodb.com/'
 
 
 def refresh_marian():
+    '''Sends a refresh request to the Marian server.'''
     print("\n### Refreshing Marian\n")
     refresh_url = MARIAN_URL+'refresh'
     try:
-        r = wait_for_response(
+        res = wait_for_response(
             'Attempting to refresh Marian',
             requests.post, refresh_url, data={}, timeout=30
         )
-        r.raise_for_status()
+        res.raise_for_status()
         print(colored('Succesfully refreshed Marian.', 'green'))
-        if r.status_code != 200:
+        if res.status_code != 200:
             message = ' '.join(['...but received unexpected response:',
-                                str(r.status_code)])
+                                str(res.status_code)])
             print(colored(message, 'yellow'))
     except ConnectionError as ex:
         raise FailedRefreshError(ex, 'Unable to connect to the Marian Server.')

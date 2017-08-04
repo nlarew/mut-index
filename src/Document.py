@@ -2,12 +2,12 @@ import re
 import urllib.parse
 from html5_parser import html_parser
 from lxml import etree
-from lxml.cssselect import CSSSelector
 
 
 def node_to_text(node):
     '''Convert an lxml node to text.'''
     return ''.join(node.itertext())
+
 
 def return_text_from_node(func):
     '''Wraps node_to_text around a function that returns an lxml node.'''
@@ -26,6 +26,8 @@ def is_element_of_type(candidate, element_type):
     if element_type == '_any':
         return is_element
     return bool(is_element and candidate.tag == element_type)
+# class DocumentParseError(Exception):
+#     def __init__():
 
 
 class Document:
@@ -51,15 +53,11 @@ class Document:
         '''Return head and content elements of the document.'''
         capsule = html_parser.parse(path.read(), maybe_xhtml=True)
         doc = etree.adopt_external_document(capsule).getroot()
-        slug = self.get_url_slug(path)[:-5]
         selectors = {
             'head': 'head',
             'main_content': ' '.join(['.main-column', '.section'])
         }
-        try:
-            return {k: doc.cssselect(sel)[0] for k, sel in selectors.items()}
-        except IndexError:
-            print(path)
+        return {k: doc.cssselect(sel)[0] for k, sel in selectors.items()}
 
     def get_url_slug(self, path):
         '''Return the slug after the base url.'''
