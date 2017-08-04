@@ -6,6 +6,7 @@ import concurrent.futures
 # from termcolor import colored
 def colored(s, c): return(s)
 
+from utils.Logger import log_unsuccessful
 from utils.ProgressBar import ProgressBar
 from Document import Document
 
@@ -19,6 +20,13 @@ BLACKLIST = [
     'search.html',
     'contents.html'
 ]
+
+class NothingIndexedError(Exception):
+    def __init__(self):
+        message = 'No documents were found.'
+        log_unsuccessful('index')(exception=super(NothingIndexedError, self).__init__(),
+                                  message=message)
+
 
 class Manifest:
     '''Manifest of index results.'''
@@ -46,6 +54,8 @@ def generate_manifest(url, root_dir, globally, show_progress):
     start_time = time.time()
     manifest = Manifest(url, globally)
     html_path_info = _get_html_path_info(root_dir, url)
+    if not html_path_info:
+        raise NothingIndexedError()
     num_documents = len(html_path_info)
     if show_progress:
         progress_bar = ProgressBar(start_time=start_time,

@@ -155,5 +155,3 @@ class Document:
             "links": self.links
         }
         return document
-
-# Yet more feedback: if there's an error, `mut-index` should display the full path of the file that it broke on in addition to showing the backtrace
