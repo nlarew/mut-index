@@ -7,12 +7,12 @@ Usage:
     <root>                 Path to the directory containing html files.
     -o, --output <output>  File name for the output manifest json. (e.g. manual-v3.2.json)
     -u, --url <url>        Base url of the property.
+    -g, --global           Includes the manifest when searching all properties.
+    -s, --show-progress    Shows a progress bar and other information via stdout.
 
     -b, --bucket <bucket>  Name of the s3 bucket to upload the index manifest to. [default: docs-mongodb-org-prod]
     -p, --prefix <prefix>  Name of the s3 prefix to attached to the manifest. [default: search-indexes]
     --no-backup            Disables automatic backup and restore of previous manifest versions.
-    -g, --global           Includes the manifest when searching all properties.
-    -s, --show-progress    Shows a progress bar and other information via stdout.
 '''
 from docopt import docopt
 from Manifest import generate_manifest
