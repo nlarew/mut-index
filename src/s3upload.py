@@ -7,36 +7,28 @@ from utils.AwaitResponse import wait_for_response
 from utils.Logger import log_unsuccessful
 
 
-def upload_manifest_to_s3(bucket, prefix, output_file, manifest, backup):
-    '''
-    Upload the manifest to s3.
-    Return a backup of the file if a previous version is currently in s3.
-    '''
-    print('\n### Uploading Manifest to s3\n')
-    prefix = prefix if prefix[-1:] == '/' else prefix + '/'
-    key = prefix + output_file
-
-    # Connect to s3
+def _connect_to_s3():
     try:
         s3 = wait_for_response(
             'Opening connection to s3',
             boto3.resource, 's3'
         )
         print('Successfully connected to s3.')
+        return s3
     except ClientError as ex:
         message = 'Unable to connect to s3.'
         log_unsuccessful('connection')(message, ex)
 
-    # Backup current manifest
-    if backup:
-        backup = Backup(bucket, prefix, output_file)
-        backup_created = backup.create()
-        if not backup_created:
-            backup = None
-    else:
-        backup = None
 
-    # Upload manifest
+def _backup_current(bucket, prefix, output_file):
+    backup = Backup(bucket, prefix, output_file)
+    backup_created = backup.create()
+    if not backup_created:
+        backup = None
+    return backup
+
+
+def _upload(s3, bucket, key, manifest):
     try:
         wait_for_response(
             'Attempting to upload to s3 with key: ' + key,
@@ -57,6 +49,19 @@ def upload_manifest_to_s3(bucket, prefix, output_file, manifest, backup):
         message = 'Unable to upload to s3.'
         log_unsuccessful('upload')(message, ex)
 
+
+def upload_manifest_to_s3(bucket, prefix, file, manifest, do_backup):
+    '''
+    Upload the manifest to s3.
+    If not --no-backup:
+        Returns a backup of the file if a previous version is currently in s3.
+    '''
+    prefix = prefix.rstrip('/') + '/'
+    key = prefix + file
+    print('\n### Uploading Manifest to s3\n')
+    s3 = _connect_to_s3()
+    backup = _backup_current(bucket, prefix, file) if do_backup else None
+    _upload(s3, bucket, key, manifest)
     return backup
 
 
@@ -67,7 +72,7 @@ class Backup:
         self.prefix = prefix
         self.output_file = output_file
         self.key = self.prefix + self.output_file
-        self.backup_directory = '/Users/nick/virtualenvs/mut-index/backups/'
+        self.backup_directory = './backups/'
         try:
             os.mkdir(self.backup_directory)
         except FileExistsError:
