@@ -33,6 +33,6 @@ class FailedRefreshError(Exception):
     '''Failed to refresh Marian.'''
     def __init__(self, exception, message):
         super(FailedRefreshError, self).__init__()
-        log_unsuccessful('refresh')(exception=exception,
-                                    message=message,
+        log_unsuccessful('refresh')(message=message,
+                                    exception=exception,
                                     exit=False)

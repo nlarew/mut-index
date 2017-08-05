@@ -7,7 +7,7 @@ from utils.AwaitResponse import wait_for_response
 from utils.Logger import log_unsuccessful
 
 
-def upload_manifest_to_s3(bucket, prefix, output_file, manifest, backup=True):
+def upload_manifest_to_s3(bucket, prefix, output_file, manifest, backup):
     '''
     Upload the manifest to s3.
     Return a backup of the file if a previous version is currently in s3.
@@ -24,7 +24,8 @@ def upload_manifest_to_s3(bucket, prefix, output_file, manifest, backup=True):
         )
         print('Successfully connected to s3.')
     except ClientError as ex:
-        log_unsuccessful('connection')(ex, 'Unable to connect to s3.')
+        message = 'Unable to connect to s3.'
+        log_unsuccessful('connection')(message, ex)
 
     # Backup current manifest
     if backup:
@@ -51,9 +52,10 @@ def upload_manifest_to_s3(bucket, prefix, output_file, manifest, backup=True):
         message = ' '.join(['Unable to upload to s3.'
                             'This is likely due to a bad manifest file.'
                             'Check the file type and syntax.'])
-        log_unsuccessful('upload')(ex, message)
+        log_unsuccessful('upload')(message, ex)
     except ClientError as ex:
-        log_unsuccessful('upload')(ex, 'Unable to upload to s3.')
+        message = 'Unable to upload to s3.'
+        log_unsuccessful('upload')(message, ex)
 
     return backup
 
@@ -85,7 +87,7 @@ class Backup:
             return True
         except ClientError as ex:
             message = 'Unable to backup current manifest from s3.'
-            log_unsuccessful('backup')(ex, message, exit=False)
+            log_unsuccessful('backup')(message, ex, exit=False)
             return False
 
     def restore(self):
@@ -104,4 +106,4 @@ class Backup:
             message = ['Unable to restore backup to s3.',
                        'Search is definitely out of sync.']
             message = ' '.join(message)
-            log_unsuccessful('backup restore')(ex, message)
+            log_unsuccessful('backup restore')(message, ex)

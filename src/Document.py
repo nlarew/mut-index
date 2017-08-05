@@ -113,7 +113,8 @@ class Document:
 
         def set_to_meta_description():
             '''Set preview to the page's meta description.'''
-            candidate_list = self.html['head'].cssselect('meta[name="description"]')
+            selector = 'meta[name="description"]'
+            candidate_list = self.html['head'].cssselect(selector)
             if candidate_list:
                 candidate_preview = candidate_list[0]
                 if is_element_of_type(candidate_preview, 'meta'):

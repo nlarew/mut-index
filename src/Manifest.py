@@ -19,11 +19,12 @@ BLACKLIST = [
     'contents.html'
 ]
 
+
 class NothingIndexedError(Exception):
     def __init__(self):
         message = 'No documents were found.'
-        log_unsuccessful('index')(exception=super(NothingIndexedError, self).__init__(),
-                                  message=message)
+        log_unsuccessful('index')(message=message,
+                                  exception=None)
 
 
 class Manifest:
@@ -64,6 +65,7 @@ def generate_manifest(url, root_dir, globally, show_progress):
     _summarize_build(num_documents, start_time)
     return manifest.json()
 
+
 def _get_html_path_info(root_dir, url):
     '''Return a list of parsed path_info for html files.'''
     def should_index(file):
@@ -76,11 +78,13 @@ def _get_html_path_info(root_dir, url):
                           if should_index(file)])
     return path_info
 
+
 def _parse_html_file(path_info):
     '''Open the html file with the given path then parse the file.'''
     file, file_dir, url = path_info
     with open(file_dir + file, 'r') as html:
         return Document(url, file_dir, html).export()
+
 
 def _process_html_files(html_path_info, manifest, progress_bar=None):
     '''Apply a function to a list of .html file paths in parallel.'''
@@ -89,6 +93,7 @@ def _process_html_files(html_path_info, manifest, progress_bar=None):
             manifest.add_document(document)
             if progress_bar:
                 progress_bar.update(document['slug'])
+
 
 def _summarize_build(num_documents, start_time):
     summary = ('\nFinished indexing!\n'
