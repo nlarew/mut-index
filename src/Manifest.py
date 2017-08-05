@@ -20,13 +20,6 @@ BLACKLIST = [
 ]
 
 
-class NothingIndexedError(Exception):
-    def __init__(self):
-        message = 'No documents were found.'
-        log_unsuccessful('index')(message=message,
-                                  exception=None)
-
-
 class Manifest:
     '''Manifest of index results.'''
     def __init__(self, url, globally):
@@ -83,7 +76,13 @@ def _parse_html_file(path_info):
     '''Open the html file with the given path then parse the file.'''
     file, file_dir, url = path_info
     with open(file_dir + file, 'r') as html:
-        return Document(url, file_dir, html).export()
+        try:
+            document = Document(url, file_dir, html).export()
+            return document
+        except Exception as ex:
+            message = 'Problem parsing file ' + file
+            log_unsuccessful('parse')(message=message,
+                                      exception=ex)
 
 
 def _process_html_files(html_path_info, manifest, progress_bar=None):
@@ -101,3 +100,10 @@ def _summarize_build(num_documents, start_time):
     summary = summary.format(num_docs=num_documents,
                              time=str(time.time() - start_time))
     print(summary)
+
+
+class NothingIndexedError(Exception):
+    def __init__(self):
+        message = 'No documents were found.'
+        log_unsuccessful('index')(message=message,
+                                  exception=None)

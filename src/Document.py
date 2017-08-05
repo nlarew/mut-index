@@ -26,8 +26,6 @@ def is_element_of_type(candidate, element_type):
     if element_type == '_any':
         return is_element
     return bool(is_element and candidate.tag == element_type)
-# class DocumentParseError(Exception):
-#     def __init__():
 
 
 class Document:
