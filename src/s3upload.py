@@ -82,13 +82,21 @@ class Backup:
     def create(self):
         '''Creates the backup file.'''
         try:
-            wait_for_response(
-                'Backing up current manifest from s3',
-                boto3.resource('s3').Bucket(self.bucket).download_file,
-                self.key,
-                self.backup_path
-            )
-            print('Successfully backed up current manifest from s3.')
+            bucket = boto3.resource('s3').Bucket(self.bucket)
+            if self.key in [obj.key for obj in bucket.objects.all()]:
+                wait_for_response(
+                    'Backing up current manifest from s3',
+                    bucket.download_file,
+                    self.key,
+                    self.backup_path
+                )
+                print('Successfully backed up current manifest from s3.')
+            else:
+                print(' '.join([
+                    'No object named',
+                    self.key,
+                    'found in s3. No backup made.'
+                ]))
             return True
         except ClientError as ex:
             message = 'Unable to backup current manifest from s3.'
